@@ -368,12 +368,14 @@
     const count = document.getElementById('car-count');
     const slides = Array.from(track.querySelectorAll('img'));
     const total = slides.length;
+    function singleSlideView() {
+      return slides[0] && slides[0].offsetWidth > track.clientWidth * 0.7;
+    }
     function current() {
       const max = track.scrollWidth - track.clientWidth;
       // Desktop shows several slides at once, so "nearest to centre" never
       // reaches the first or last. Use scroll progress when that's the case.
-      const singleSlideView = slides[0] && slides[0].offsetWidth > track.clientWidth * 0.7;
-      if (!singleSlideView) {
+      if (!singleSlideView()) {
         if (max <= 0) return 0;
         return Math.round((track.scrollLeft / max) * (total - 1));
       }
@@ -390,8 +392,14 @@
     }
     function sync() { count.textContent = (current() + 1) + ' / ' + total; }
     function go(step) {
-      const target = slides[Math.max(0, Math.min(total - 1, current() + step))];
-      track.scrollTo({ left: target.offsetLeft - (track.clientWidth - target.offsetWidth) / 2, behavior: 'smooth' });
+      if (singleSlideView()) {
+        const target = slides[Math.max(0, Math.min(total - 1, current() + step))];
+        track.scrollTo({ left: target.offsetLeft - (track.clientWidth - target.offsetWidth) / 2, behavior: 'smooth' });
+      } else {
+        // Several slides visible: move by a screenful rather than by index,
+        // otherwise the coarse progress index keeps resolving to the same slide.
+        track.scrollBy({ left: track.clientWidth * 0.8 * step, behavior: 'smooth' });
+      }
     }
     document.getElementById('car-prev').addEventListener('click', () => go(-1));
     document.getElementById('car-next').addEventListener('click', () => go(1));
